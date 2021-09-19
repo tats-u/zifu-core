@@ -1,0 +1,26 @@
+name: CI (master)
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Check format
+      run: cargo fmt -- --check -l
+    - name: Build
+      run: cargo build --verbose
+    - name: ZIP check
+      run: ls tests/assets/*.zip | xargs -n 1 7z t -ptest
+    - name: Run tests
+      run: cargo test --verbose
