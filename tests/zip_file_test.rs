@@ -8,7 +8,7 @@ use std::{
 
 use tempfile::tempdir;
 use zifu_core::{
-    filename_decoder::{self, IDecoder},
+    filename_decoder::{self, IDecoder, UTF8NFCDecoder},
     FileNameEncodingType, InputZIPArchive,
 };
 
@@ -339,5 +339,68 @@ fn macos_finder_emulate_test() -> anyhow::Result<()> {
         ),
         "file name turned to be regular UTF-8"
     );
+    Ok(())
+}
+
+#[test]
+fn implicit_utf8_test() -> anyhow::Result<()> {
+    let mut before = InputZIPArchive::new(open_bufreader("tests/assets/implicit_utf8.zip")?)?;
+    before.check_unsupported_zip_type()?;
+    assert!(
+        before
+            .diagnose_file_name_encoding()
+            .has_implicit_non_ascii_names,
+        "has non-ASCII file names"
+    );
+    let utf8_decoder = UTF8NFCDecoder {};
+    assert!(
+        matches!(before.get_filename_decoder_index(&[&utf8_decoder]), Some(_)),
+        "sjis decoder is matched",
+    );
+    let names_list = before.get_file_names_list(&utf8_decoder);
+    let name_entry = names_list
+        .get(0)
+        .ok_or(anyhow::anyhow!("`names_list` has at least one entry"))?;
+    assert_eq!(name_entry.name, "テスト.txt", "file name is `テスト.txt`");
+    assert!(
+        matches!(
+            name_entry.encoding_type,
+            FileNameEncodingType::ImplicitNonASCII
+        ),
+        "file name is implicit non-ASCII"
+    );
+
+    before.convert_central_directory_file_names(&utf8_decoder);
+
+    assert!(
+        before.diagnose_file_name_encoding().is_universal_archive(),
+        "archive is universal after application"
+    );
+    let names_list = before.get_file_names_list(&utf8_decoder);
+    let name_entry = names_list
+        .get(0)
+        .ok_or(anyhow::anyhow!("`names_list` still has at least one entry"))?;
+    assert_eq!(
+        name_entry.name, "テスト.txt",
+        "file name is still `テスト.txt`"
+    );
+    assert!(
+        matches!(
+            name_entry.encoding_type,
+            FileNameEncodingType::ExplicitRegularUTF8
+        ),
+        "file name turned to be explicitly regular UTF-8"
+    );
+
+    let mut dump = Cursor::new(Vec::<u8>::new());
+    before.output_archive_with_central_directory_file_names(&mut dump)?;
+    dump.seek(SeekFrom::Start(0))?;
+    let mut after = File::open("tests/assets/implicit_utf8_fixed.zip")?;
+    assert_eq!(
+        read_all(&mut dump)?,
+        read_all(&mut after)?,
+        "Dumped content is the same as what is expected (`implicit_utf8_fixed.zip`)"
+    );
+
     Ok(())
 }
