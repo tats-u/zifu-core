@@ -15,7 +15,7 @@ include = ["src/**/*", "Cargo.toml", "Cargo.lock", "README.md", "LICENSE.txt"]
 
 [dependencies]
 byteorder = "1.4.3"
-anyhow = "1.0.43"
+anyhow = "1.0.44"
 encoding_rs = "0.8.28"
 bytesize = "1.1.0"
 locale_config = "0.3.0"
