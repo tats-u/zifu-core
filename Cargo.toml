@@ -1,6 +1,6 @@
 [package]
 name = "zifu_core"
-version = "0.1.1-beta"
+version = "0.1.1"
 authors = ["Tatsunori Uchino <tats.u@live.jp>"]
 edition = "2018"
 license = "MIT"
