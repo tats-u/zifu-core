@@ -253,9 +253,10 @@ where
                 )?;
             if local_header.file_name_length != cd.file_name_length {
                 local_header.set_file_name_from_slice(&cd.file_name_raw);
-                if cd.is_encoded_in_utf8() {
-                    local_header.set_utf8_encoded_flag();
-                }
+            }
+            // We don't have to consider the case that the UTF-8 flag only in the local file header is set (very rare & non-RFC)
+            if cd.is_encoded_in_utf8() {
+                local_header.set_utf8_encoded_flag();
             }
             cd.local_header_position = pos as u32;
             pos += local_header.write(dest_handler)?;
